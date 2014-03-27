@@ -47,13 +47,29 @@ class Color16(Color):
         return bytearray(bytes)
 
 
+class Color24(Color):
+    def __init__(self, r, g, b):
+        self.r = int(round(r*255))
+        self.g = int(round(g*255))
+        self.b = int(round(b*255))
+
+    def as_bytes(self):
+        return bytearray([self.r, self.g, self.b])
+
+    @classmethod
+    def many_as_bytes(cls, pixels):
+        bytes = []
+        for pixel in pixels:
+            bytes += Color24(*color_float(*pixel)).as_bytes()
+        return bytearray(bytes)
+
 COLORS = {
-    Color16: 0
+    Color24: 0
 }
 
 
 class Matrix(object):
-    def __init__(self, dev, width, height, color_type=Color16, baudrate=200000, serial_timeout=1):
+    def __init__(self, dev, width, height, color_type=Color24, baudrate=200000, serial_timeout=1):
         self.width = width
         self.height = height
         self.color_type=color_type
@@ -85,7 +101,10 @@ class Matrix(object):
         ])
 
         send_buffer += self.color_type.many_as_bytes(pixels)
-        self.send(send_buffer)
+
+        # Using the native due usb there's no need to wait for a reply, but it might be needed again at some point
+        #self.send(send_buffer)
+        self.send(send_buffer, wait_for_reply=False)
         self.ser.flushInput()
 
     def send(self, send_buffer, wait_for_reply=True, wait_for_empty_buffer=True):
